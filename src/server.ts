@@ -9,6 +9,7 @@ import { connectDatabase } from './config/database';
 import { connectRedis } from './config/redis';
 import env from './config/env';
 import { logger } from './utils';
+import { seedDatabase } from '../scripts/seed';
 
 /**
  * Start the server with optimized settings
@@ -18,6 +19,9 @@ const startServer = async (): Promise<void> => {
     // Connect to databases
     await connectDatabase();
     await connectRedis();
+
+    // Seed database with initial data (only if empty)
+    await seedDatabase();
 
     // Create Express app
     const app = createApp();

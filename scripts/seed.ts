@@ -376,15 +376,23 @@ const tvShowsData = [
   },
 ];
 
-async function seed(): Promise<void> {
-  try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://admin:password123@localhost:27017/mylist_db?authSource=admin';
-    
-    console.log('🔄 Connecting to MongoDB...');
-    await mongoose.connect(mongoUri);
-    console.log('✅ Connected to MongoDB');
+/**
+ * Seed database with initial data
+ * @description This function can be called from server.ts or run standalone
+ * @param options.force - If true, clears existing data and re-seeds
+ */
+export async function seedDatabase(options: { force?: boolean } = {}): Promise<void> {
+  const { force = false } = options;
 
-    // Clear existing data
+  // Check if data already exists (skip seeding if not forced)
+  const existingUsers = await User.countDocuments();
+  if (existingUsers > 0 && !force) {
+    console.log('📦 Database already seeded. Skipping... (use force: true to re-seed)');
+    return;
+  }
+
+  // Clear existing data if force or first time
+  if (existingUsers > 0) {
     console.log('🗑️  Clearing existing data...');
     await Promise.all([
       User.deleteMany({}),
@@ -392,82 +400,98 @@ async function seed(): Promise<void> {
       TVShow.deleteMany({}),
       MyListItem.deleteMany({}),
     ]);
+  }
 
-    // Seed users
-    console.log('👤 Seeding users...');
-    const users = await User.insertMany(usersData);
-    console.log(`   Created ${users.length} users`);
+  // Seed users
+  console.log('👤 Seeding users...');
+  const users = await User.insertMany(usersData);
+  console.log(`   Created ${users.length} users`);
 
-    // Seed movies
-    console.log('🎬 Seeding movies...');
-    const movies = await Movie.insertMany(moviesData);
-    console.log(`   Created ${movies.length} movies`);
+  // Seed movies
+  console.log('🎬 Seeding movies...');
+  const movies = await Movie.insertMany(moviesData);
+  console.log(`   Created ${movies.length} movies`);
 
-    // Seed TV shows
-    console.log('📺 Seeding TV shows...');
-    const tvShows = await TVShow.insertMany(tvShowsData);
-    console.log(`   Created ${tvShows.length} TV shows`);
+  // Seed TV shows
+  console.log('📺 Seeding TV shows...');
+  const tvShows = await TVShow.insertMany(tvShowsData);
+  console.log(`   Created ${tvShows.length} TV shows`);
 
-    // Create sample list items for first user (15+ items for pagination testing)
-    console.log('📋 Creating sample list items...');
-    const sampleListItems: ListItemSeedData[] = [];
-    
-    // Add 12 movies to the list
-    for (let i = 0; i < 12; i++) {
-      sampleListItems.push({
-        user_id: users[0]._id.toString(),
-        content_id: movies[i]._id.toString(),
-        content_type: 'movie' as const,
-        added_at: new Date(Date.now() - i * 1000), // Staggered timestamps
-        title: movies[i].title,
-        description: movies[i].description,
-        genres: movies[i].genres,
-        release_date: movies[i].releaseDate,
-        director: movies[i].director,
-        actors: movies[i].actors,
-      });
-    }
-    
-    // Add 5 TV shows to the list
-    for (let i = 0; i < 5; i++) {
-      sampleListItems.push({
-        user_id: users[0]._id.toString(),
-        content_id: tvShows[i]._id.toString(),
-        content_type: 'tvshow' as const,
-        added_at: new Date(Date.now() - (12 + i) * 1000), // Continue staggered timestamps
-        title: tvShows[i].title,
-        description: tvShows[i].description,
-        genres: tvShows[i].genres,
-        release_date: tvShows[i].episodes[0].releaseDate,
-        director: tvShows[i].episodes[0].director,
-        actors: Array.from(new Set(tvShows[i].episodes.flatMap(ep => ep.actors))),
-      });
-    }
-    
-    await MyListItem.insertMany(sampleListItems);
-    console.log(`   Created ${sampleListItems.length} list items for user: ${users[0].username}`);
-
-    console.log('\n✅ Seed completed successfully!');
-    console.log('\n📊 Summary:');
-    console.log(`   Users: ${users.length}`);
-    console.log(`   Movies: ${movies.length}`);
-    console.log(`   TV Shows: ${tvShows.length}`);
-    console.log(`   List Items: ${sampleListItems.length}`);
-    
-    console.log('\n🔑 Test User IDs:');
-    users.forEach((user, index) => {
-      console.log(`   ${index + 1}. ${user.username}: ${user._id.toString()}`);
+  // Create sample list items for first user (15+ items for pagination testing)
+  console.log('📋 Creating sample list items...');
+  const sampleListItems: ListItemSeedData[] = [];
+  
+  // Add 12 movies to the list
+  for (let i = 0; i < 12; i++) {
+    sampleListItems.push({
+      user_id: users[0]._id.toString(),
+      content_id: movies[i]._id.toString(),
+      content_type: 'movie' as const,
+      added_at: new Date(Date.now() - i * 1000), // Staggered timestamps
+      title: movies[i].title,
+      description: movies[i].description,
+      genres: movies[i].genres,
+      release_date: movies[i].releaseDate,
+      director: movies[i].director,
+      actors: movies[i].actors,
     });
-
-    console.log('\n🎬 Sample Movie IDs:');
-    movies.slice(0, 5).forEach((movie, index) => {
-      console.log(`   ${index + 1}. ${movie.title}: ${movie._id.toString()}`);
+  }
+  
+  // Add 5 TV shows to the list
+  for (let i = 0; i < 5; i++) {
+    sampleListItems.push({
+      user_id: users[0]._id.toString(),
+      content_id: tvShows[i]._id.toString(),
+      content_type: 'tvshow' as const,
+      added_at: new Date(Date.now() - (12 + i) * 1000), // Continue staggered timestamps
+      title: tvShows[i].title,
+      description: tvShows[i].description,
+      genres: tvShows[i].genres,
+      release_date: tvShows[i].episodes[0].releaseDate,
+      director: tvShows[i].episodes[0].director,
+      actors: Array.from(new Set(tvShows[i].episodes.flatMap(ep => ep.actors))),
     });
+  }
+  
+  await MyListItem.insertMany(sampleListItems);
+  console.log(`   Created ${sampleListItems.length} list items for user: ${users[0].username}`);
 
-    console.log('\n📺 Sample TV Show IDs:');
-    tvShows.slice(0, 5).forEach((show, index) => {
-      console.log(`   ${index + 1}. ${show.title}: ${show._id.toString()}`);
-    });
+  console.log('\n✅ Seed completed successfully!');
+  console.log('\n📊 Summary:');
+  console.log(`   Users: ${users.length}`);
+  console.log(`   Movies: ${movies.length}`);
+  console.log(`   TV Shows: ${tvShows.length}`);
+  console.log(`   List Items: ${sampleListItems.length}`);
+  
+  console.log('\n🔑 Test User IDs:');
+  users.forEach((user, index) => {
+    console.log(`   ${index + 1}. ${user.username}: ${user._id.toString()}`);
+  });
+
+  console.log('\n🎬 Sample Movie IDs:');
+  movies.slice(0, 5).forEach((movie, index) => {
+    console.log(`   ${index + 1}. ${movie.title}: ${movie._id.toString()}`);
+  });
+
+  console.log('\n📺 Sample TV Show IDs:');
+  tvShows.slice(0, 5).forEach((show, index) => {
+    console.log(`   ${index + 1}. ${show.title}: ${show._id.toString()}`);
+  });
+}
+
+/**
+ * Standalone seed script (for npm run seed)
+ */
+async function runStandaloneSeed(): Promise<void> {
+  try {
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://admin:password123@localhost:27017/mylist_db?authSource=admin';
+    
+    console.log('🔄 Connecting to MongoDB...');
+    await mongoose.connect(mongoUri);
+    console.log('✅ Connected to MongoDB');
+
+    // Force re-seed when running standalone
+    await seedDatabase({ force: true });
 
   } catch (error) {
     console.error('❌ Seed failed:', error);
@@ -478,5 +502,8 @@ async function seed(): Promise<void> {
   }
 }
 
-void seed();
+// Run standalone if this file is executed directly
+if (require.main === module) {
+  void runStandaloneSeed();
+}
 
