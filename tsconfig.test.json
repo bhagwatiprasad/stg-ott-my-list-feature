@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["jest", "node"],
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["tests/**/*", "src/**/*", "tests/jest-globals.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+
