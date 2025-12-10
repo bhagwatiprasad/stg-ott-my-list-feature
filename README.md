@@ -339,6 +339,104 @@ Tests:       65 passed, 65 total
 
 ---
 
+## 🔄 CI/CD Pipeline (GitHub Actions)
+
+The project includes a comprehensive GitHub Actions workflow for continuous integration.
+
+### Workflow Triggers
+
+| Event | Branches | Description |
+|-------|----------|-------------|
+| `push` | `main`, `develop` | Runs on every push to main or develop |
+| `pull_request` | `main` | Runs on PRs targeting main branch |
+
+### Pipeline Jobs
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    CI/CD Pipeline Overview                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌──────────────────┐    ┌──────────────────┐                  │
+│   │  Build & Test    │    │  Security Audit  │   (Parallel)     │
+│   │                  │    │                  │                  │
+│   │  ✓ Checkout      │    │  ✓ npm audit     │                  │
+│   │  ✓ Node.js 20    │    │  ✓ High severity │                  │
+│   │  ✓ npm ci        │    │    check         │                  │
+│   │  ✓ Lint          │    └──────────────────┘                  │
+│   │  ✓ Build         │                                          │
+│   │  ✓ Test + Cover  │                                          │
+│   │  ✓ Upload Report │                                          │
+│   └──────────────────┘                                          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Job 1: Build, Lint & Test
+
+Runs on `ubuntu-latest` with containerized services:
+
+| Service | Image | Port | Health Check |
+|---------|-------|------|--------------|
+| MongoDB | `mongo:7` | 27017 | `mongosh ping` |
+| Redis | `redis:7-alpine` | 6379 | `redis-cli ping` |
+
+**Pipeline Steps:**
+
+| Step | Action | Description |
+|------|--------|-------------|
+| 1 | `📥 Checkout` | Download code from repository |
+| 2 | `📦 Setup Node.js` | Install Node.js 20 with npm cache |
+| 3 | `📚 Install deps` | `npm ci` - Clean install from lockfile |
+| 4 | `🔍 Linting` | Run ESLint code quality checks |
+| 5 | `🔨 Build` | Compile TypeScript to JavaScript |
+| 6 | `🧪 Tests` | Run all 65 tests with coverage |
+| 7 | `📊 Coverage` | Upload report to Codecov |
+
+**Test Environment:**
+```yaml
+NODE_ENV: test
+PORT: 3000
+MONGODB_URI: mongodb://localhost:27017/mylist_test
+REDIS_URL: redis://localhost:6379
+LOG_LEVEL: error
+```
+
+### Job 2: Security Audit
+
+Runs `npm audit --audit-level=high` to check for vulnerabilities in dependencies.
+
+### Workflow File Location
+
+```
+.github/
+└── workflows/
+    └── ci.yml    # CI/CD pipeline configuration
+```
+
+### Running Workflow Locally (Optional)
+
+To simulate the CI pipeline locally:
+
+```bash
+# 1. Start services (MongoDB + Redis)
+docker-compose up -d
+
+# 2. Run lint
+npm run lint
+
+# 3. Build
+npm run build
+
+# 4. Run tests with coverage
+npm run test:coverage
+
+# 5. Security audit
+npm audit --audit-level=high
+```
+
+---
+
 ## 🔮 Future Enhancements
 
 Even though the current implementation meets all performance requirements, there's scope for further improvements:
