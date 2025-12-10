@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from .env file (only in development)
+// In production (Render, Fly.io), env vars are injected directly
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 // Environment schema validation
 const envSchema = z.object({

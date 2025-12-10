@@ -27,7 +27,9 @@ const startServer = async (): Promise<void> => {
     const app = createApp();
 
     // Start server with Keep-Alive optimization
-    const server = app.listen(env.PORT, () => {
+    // Listen on 0.0.0.0 to accept connections from all interfaces (required for cloud platforms)
+    const HOST = '0.0.0.0';
+    const server = app.listen(env.PORT, HOST, () => {
       logger.startup({
         port: env.PORT,
         environment: env.NODE_ENV,
