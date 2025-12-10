@@ -78,6 +78,15 @@ export const createApp = (): Application => {
     next();
   });
 
+  // Health check endpoint (for deployment platforms)
+  app.get('/health', (_req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
+  });
+
   // API routes
   app.use('/api', routes);
 

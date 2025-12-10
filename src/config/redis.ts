@@ -10,11 +10,8 @@ export const createRedisClient = (): Redis => {
     return redisClient;
   }
 
-  redisClient = new Redis({
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
-    password: env.REDIS_PASSWORD || undefined,
-    
+  // Common Redis options
+  const redisOptions = {
     // Connection settings
     maxRetriesPerRequest: 3,
     enableReadyCheck: true,
@@ -38,10 +35,27 @@ export const createRedisClient = (): Redis => {
       }
       return Math.min(times * 100, 3000); // Exponential backoff, max 3s
     },
-  });
+  };
+
+  // Support both REDIS_URL (cloud platforms) and individual variables (local)
+  if (env.REDIS_URL) {
+    // Use URL if provided (Render, Fly.io, Railway)
+    redisClient = new Redis(env.REDIS_URL, redisOptions);
+  } else {
+    // Use individual variables (local development)
+    redisClient = new Redis({
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
+      password: env.REDIS_PASSWORD || undefined,
+      ...redisOptions,
+    });
+  }
 
   redisClient.on('connect', () => {
-    logger.info('Redis connected successfully', { host: env.REDIS_HOST, port: env.REDIS_PORT });
+    const connectionInfo = env.REDIS_URL 
+      ? { url: env.REDIS_URL.replace(/:[^:@]+@/, ':****@') } // Mask password in URL
+      : { host: env.REDIS_HOST, port: env.REDIS_PORT };
+    logger.info('Redis connected successfully', connectionInfo);
   });
 
   redisClient.on('error', (error) => {
